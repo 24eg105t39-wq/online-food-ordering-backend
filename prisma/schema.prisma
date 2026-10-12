@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  password     String
+  phone        String?
+  role         Role          @default(CUSTOMER)
+  avatar       String?
+  addresses    Address[]
+  orders       Order[]
+  reviews      Review[]
+  wishlist     WishlistItem[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Address {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label         String   @default("Home") // Home, Work, Other
+  recipientName String
+  street        String
+  city          String
+  state         String
+  postalCode    String
+  phone         String
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orders        Order[]
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  image       String
+  foods       FoodItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model FoodItem {
+  id              String         @id @default(cuid())
+  name            String
+  description     String
+  price           Float
+  originalPrice   Float?
+  categoryId      String
+  category        Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  image           String
+  isVeg           Boolean        @default(true)
+  isAvailable     Boolean        @default(true)
+  rating          Float          @default(4.5)
+  reviewsCount    Int            @default(0)
+  prepTimeMinutes Int            @default(25)
+  calories        Int?
+  spicyLevel      Int            @default(1) // 0=mild, 1=medium, 2=hot, 3=extra hot
+  tags            String?        // Comma-separated: "Bestseller,Chef Special"
+  orderItems      OrderItem[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Coupon {
+  id                String    @id @default(cuid())
+  code              String    @unique
+  discountPercent   Float
+  maxDiscountAmount Float?
+  minOrderAmount    Float     @default(0)
+  validUntil        DateTime?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Order {
+  id                    String        @id @default(cuid())
+  orderNumber           String        @unique // e.g. CK-2026-9481
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addressId             String?
+  address               Address?      @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  deliveryAddressJson   String        // Fallback snapshot of full address
+  items                 OrderItem[]
+  subtotalAmount        Float
+  deliveryFee           Float         @default(40)
+  discountAmount        Float         @default(0)
+  taxAmount             Float         @default(0)
+  totalAmount           Float
+  couponCode            String?
+  status                OrderStatus   @default(PENDING)
+  paymentMethod         PaymentMethod @default(COD)
+  paymentStatus         PaymentStatus @default(PENDING)
+  transactionId         String?
+  deliveryInstructions  String?
+  estimatedDeliveryTime DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  foodItemId String
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+  foodName   String
+  price      Float
+  quantity   Int
+  image      String
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  foodItemId String
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName   String
+  rating     Float
+  comment    String
+  createdAt  DateTime @default(now())
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodItemId String
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, foodItemId])
+}
