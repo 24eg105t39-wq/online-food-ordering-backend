@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 import assert from 'assert';
 import http from 'http';
 import app from '../index';
@@ -223,8 +224,20 @@ async function runTests() {
     assert.strictEqual(updateStatusRes.data.data.status, 'PREPARING');
     console.log('✓ Order lifecycle status transition passed');
 
+    // 11. Live Location Tracking & Nearby Restaurants
+    console.log('[Test 11] Live Location Tracking & Nearby Restaurants');
+    const nearbyRes = await makeRequest(
+      'GET',
+      '/api/restaurants?latitude=12.9784&longitude=77.6408'
+    );
+    assert.strictEqual(nearbyRes.status, 200);
+    assert.ok(nearbyRes.data.data.length >= 6);
+    assert.strictEqual(nearbyRes.data.data[0].id, 'rest_01');
+    assert.ok(nearbyRes.data.data[0].distanceKm <= 0.1);
+    console.log(`✓ Live distance calculated: ${nearbyRes.data.data[0].name} is ${nearbyRes.data.data[0].distanceKm} km away`);
+
     console.log('====================================================');
-    console.log(' ALL 10 TEST SUITES PASSED FLAWLESSLY!');
+    console.log(' ALL 11 TEST SUITES PASSED FLAWLESSLY!');
     console.log('====================================================');
   } finally {
     server.close();

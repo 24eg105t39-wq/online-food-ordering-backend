@@ -9,11 +9,12 @@ export async function getFoods(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { category, search, isVeg, sort, minPrice, maxPrice } = req.query;
+    const { category, search, isVeg, sort, minPrice, maxPrice, restaurantId } = req.query;
 
     const foods = store.getFoods({
       category: category as string,
       search: search as string,
+      restaurantId: restaurantId as string,
       isVeg: isVeg !== undefined ? isVeg === 'true' : undefined,
       sort: sort as any,
       minPrice: minPrice ? parseFloat(minPrice as string) : undefined,

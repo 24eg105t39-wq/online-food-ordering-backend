@@ -7,8 +7,24 @@ import {
   CategoryData,
   CouponData,
   AddressData,
-  CreateOrderInput
+  CreateOrderInput,
+  RestaurantData,
 } from '../types';
+
+export function calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c;
+  return Math.round(d * 10) / 10;
+}
 
 export interface UserRecord {
   id: string;
@@ -72,6 +88,7 @@ export interface ReviewRecord {
 
 class StoreService {
   private users: Map<string, UserRecord> = new Map();
+  private restaurants: Map<string, RestaurantData> = new Map();
   private categories: Map<string, CategoryData> = new Map();
   private foods: Map<string, FoodItemData> = new Map();
   private coupons: Map<string, CouponData> = new Map();
@@ -133,7 +150,127 @@ class StoreService {
     };
     this.addresses.set(addr1.id, addr1);
 
-    // 2. Categories
+    // 2. Restaurants
+    const initialRestaurants: RestaurantData[] = [
+      {
+        id: 'rest_01',
+        name: 'Royal Biryani Darbar',
+        slug: 'royal-biryani-darbar',
+        description: 'Authentic Nawabi dum biryanis, kebabs, and aromatic Mughal gravies.',
+        image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80',
+        bannerImage: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=1200&q=80',
+        rating: 4.8,
+        reviewsCount: 1420,
+        cuisines: ['Biryani', 'Mughlai', 'North Indian'],
+        address: '100ft Road, Indiranagar, Bengaluru',
+        latitude: 12.9784,
+        longitude: 77.6408,
+        deliveryTimeMinutes: 25,
+        deliveryFee: 30,
+        minOrder: 199,
+        isPureVeg: false,
+        isOpen: true,
+      },
+      {
+        id: 'rest_02',
+        name: 'The Burger Loft & Co.',
+        slug: 'the-burger-loft',
+        description: 'Gourmet smashed beef & crispy chicken burgers, brioche buns and truffle fries.',
+        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
+        bannerImage: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1200&q=80',
+        rating: 4.7,
+        reviewsCount: 980,
+        cuisines: ['Burgers', 'Fast Food', 'Beverages'],
+        address: '5th Block, Koramangala, Bengaluru',
+        latitude: 12.9352,
+        longitude: 77.6245,
+        deliveryTimeMinutes: 20,
+        deliveryFee: 25,
+        minOrder: 149,
+        isPureVeg: false,
+        isOpen: true,
+      },
+      {
+        id: 'rest_03',
+        name: 'Little Napoli Trattoria',
+        slug: 'little-napoli-trattoria',
+        description: 'Neapolitan sourdough pizzas baked in firewood oven, pastas & gelato.',
+        image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
+        bannerImage: 'https://images.unsplash.com/photo-1579684947550-22e945225d9a?auto=format&fit=crop&w=1200&q=80',
+        rating: 4.9,
+        reviewsCount: 1150,
+        cuisines: ['Italian', 'Pizzas', 'Pastas'],
+        address: '12th Main, Indiranagar, Bengaluru',
+        latitude: 12.9719,
+        longitude: 77.6412,
+        deliveryTimeMinutes: 30,
+        deliveryFee: 40,
+        minOrder: 249,
+        isPureVeg: false,
+        isOpen: true,
+      },
+      {
+        id: 'rest_04',
+        name: 'Zen Garden Wok & Bowls',
+        slug: 'zen-garden-wok',
+        description: 'Pan-Asian wok noodles, dim sums, Thai green curry and sushi bowls.',
+        image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80',
+        bannerImage: 'https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&w=1200&q=80',
+        rating: 4.6,
+        reviewsCount: 640,
+        cuisines: ['Asian', 'Chinese', 'Thai'],
+        address: 'Sector 4, HSR Layout, Bengaluru',
+        latitude: 12.9121,
+        longitude: 77.6446,
+        deliveryTimeMinutes: 35,
+        deliveryFee: 35,
+        minOrder: 199,
+        isPureVeg: false,
+        isOpen: true,
+      },
+      {
+        id: 'rest_05',
+        name: 'Green Harvest Kitchen',
+        slug: 'green-harvest-kitchen',
+        description: '100% Pure vegetarian organic grain bowls, fresh salads and detox cold juices.',
+        image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80',
+        bannerImage: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80',
+        rating: 4.9,
+        reviewsCount: 820,
+        cuisines: ['Healthy', 'Salads', 'Pure Veg'],
+        address: 'Lavelle Road, MG Road, Bengaluru',
+        latitude: 12.9756,
+        longitude: 77.6066,
+        deliveryTimeMinutes: 25,
+        deliveryFee: 20,
+        minOrder: 150,
+        isPureVeg: true,
+        isOpen: true,
+      },
+      {
+        id: 'rest_06',
+        name: 'Chaat Chatore & Sweet Boutique',
+        slug: 'chaat-chatore',
+        description: 'Famous Old Delhi style chaats, pav bhaji, samosas, chole bhature and rasmalai.',
+        image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80',
+        bannerImage: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=1200&q=80',
+        rating: 4.8,
+        reviewsCount: 1650,
+        cuisines: ['Street Food', 'Desserts', 'Pure Veg'],
+        address: '3rd Block, Jayanagar, Bengaluru',
+        latitude: 12.9308,
+        longitude: 77.5838,
+        deliveryTimeMinutes: 20,
+        deliveryFee: 25,
+        minOrder: 99,
+        isPureVeg: true,
+        isOpen: true,
+      },
+    ];
+
+    initialRestaurants.forEach((r) => this.restaurants.set(r.id, r));
+
+    // 3. Categories
     const initialCategories: CategoryData[] = [
       {
         id: 'cat_biryani',
@@ -646,7 +783,25 @@ class StoreService {
       },
     ];
 
-    initialFoods.forEach((f) => this.foods.set(f.id, f));
+    const restaurantCategoryMap: Record<string, { id: string; name: string }> = {
+      cat_biryani: { id: 'rest_01', name: 'Royal Biryani Darbar' },
+      cat_burgers: { id: 'rest_02', name: 'The Burger Loft & Co.' },
+      cat_pizzas: { id: 'rest_03', name: 'Little Napoli Trattoria' },
+      cat_asian: { id: 'rest_04', name: 'Zen Garden Wok & Bowls' },
+      cat_healthy: { id: 'rest_05', name: 'Green Harvest Kitchen' },
+      cat_desserts: { id: 'rest_06', name: 'Chaat Chatore & Sweet Boutique' },
+      cat_beverages: { id: 'rest_02', name: 'The Burger Loft & Co.' },
+      cat_street: { id: 'rest_06', name: 'Chaat Chatore & Sweet Boutique' },
+    };
+
+    initialFoods.forEach((f) => {
+      const rest = restaurantCategoryMap[f.categoryId];
+      if (rest) {
+        f.restaurantId = rest.id;
+        f.restaurantName = rest.name;
+      }
+      this.foods.set(f.id, f);
+    });
 
     // 4. Coupons
     const initialCoupons: CouponData[] = [
@@ -854,6 +1009,71 @@ class StoreService {
     return u;
   }
 
+  // --- Restaurants ---
+  getRestaurants(options?: {
+    latitude?: number;
+    longitude?: number;
+    radiusKm?: number;
+    search?: string;
+    isVeg?: boolean;
+  }): RestaurantData[] {
+    let list = Array.from(this.restaurants.values());
+
+    if (options?.search) {
+      const q = options.search.toLowerCase().trim();
+      list = list.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.cuisines.some((c) => c.toLowerCase().includes(q)) ||
+          r.address.toLowerCase().includes(q)
+      );
+    }
+
+    if (options?.isVeg !== undefined) {
+      list = list.filter((r) => r.isPureVeg === options.isVeg);
+    }
+
+    if (options?.latitude !== undefined && options?.longitude !== undefined) {
+      list = list.map((r) => {
+        const distanceKm = calculateHaversineDistance(
+          options.latitude!,
+          options.longitude!,
+          r.latitude,
+          r.longitude
+        );
+        const dynamicDeliveryTime = Math.max(15, Math.min(60, Math.round(15 + distanceKm * 4)));
+        return {
+          ...r,
+          distanceKm,
+          deliveryTimeMinutes: dynamicDeliveryTime,
+        };
+      });
+
+      if (options?.radiusKm) {
+        list = list.filter((r) => (r.distanceKm ?? 0) <= options.radiusKm!);
+      }
+
+      list.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
+    }
+
+    return list;
+  }
+
+  getRestaurantById(id: string, userLat?: number, userLng?: number): RestaurantData | undefined {
+    const r = this.restaurants.get(id);
+    if (!r) return undefined;
+    if (userLat !== undefined && userLng !== undefined) {
+      const distanceKm = calculateHaversineDistance(userLat, userLng, r.latitude, r.longitude);
+      const dynamicDeliveryTime = Math.max(15, Math.min(60, Math.round(15 + distanceKm * 4)));
+      return {
+        ...r,
+        distanceKm,
+        deliveryTimeMinutes: dynamicDeliveryTime,
+      };
+    }
+    return r;
+  }
+
   // --- Categories ---
   getAllCategories(): CategoryData[] {
     return Array.from(this.categories.values());
@@ -890,8 +1110,13 @@ class StoreService {
     minPrice?: number;
     maxPrice?: number;
     isAvailable?: boolean;
+    restaurantId?: string;
   }): FoodItemData[] {
     let result = Array.from(this.foods.values());
+
+    if (filters.restaurantId) {
+      result = result.filter((f) => f.restaurantId === filters.restaurantId);
+    }
 
     if (filters.category && filters.category !== 'all') {
       const cat = filters.category.toLowerCase();

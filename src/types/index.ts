@@ -2,6 +2,27 @@ import { Role, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 
 export type UserRole = 'CUSTOMER' | 'ADMIN';
 
+export interface RestaurantData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  bannerImage: string;
+  rating: number;
+  reviewsCount: number;
+  cuisines: string[];
+  address: string;
+  latitude: number;
+  longitude: number;
+  deliveryTimeMinutes: number;
+  deliveryFee: number;
+  minOrder: number;
+  isPureVeg: boolean;
+  isOpen: boolean;
+  distanceKm?: number;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -17,6 +38,8 @@ export interface FoodItemData {
   originalPrice?: number | null;
   categoryId: string;
   categoryName?: string;
+  restaurantId?: string;
+  restaurantName?: string;
   image: string;
   isVeg: boolean;
   isAvailable: boolean;

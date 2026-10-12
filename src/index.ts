@@ -15,6 +15,7 @@ import addressRoutes from './routes/addressRoutes';
 import wishlistRoutes from './routes/wishlistRoutes';
 import adminRoutes from './routes/adminRoutes';
 import healthRoutes from './routes/healthRoutes';
+import restaurantRoutes from './routes/restaurantRoutes';
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.get('/', (req: Request, res: Response) => {
       coupons: '/api/coupons',
       addresses: '/api/addresses',
       wishlist: '/api/wishlist',
+      restaurants: '/api/restaurants',
       admin: '/api/admin',
     },
   });
@@ -56,6 +58,7 @@ app.get('/', (req: Request, res: Response) => {
 // API Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/foods', foodRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/orders', orderRoutes);
@@ -76,20 +79,24 @@ app.use((req: Request, res: Response) => {
 app.use(errorHandler);
 
 // Server startup
-const server = app.listen(config.port, async () => {
-  console.log(`===============================================`);
-  console.log(` CraveKart REST API Server running`);
-  console.log(` Port: ${config.port}`);
-  console.log(` Mode: ${config.nodeEnv}`);
-  console.log(` Health check: http://localhost:${config.port}/api/health`);
-  console.log(`===============================================`);
+let server: any;
+const isTestRunner = process.argv.some((arg) => arg.includes('test'));
+if (!isTestRunner && process.env.NODE_ENV !== 'test') {
+  server = app.listen(config.port, async () => {
+    console.log(`===============================================`);
+    console.log(` CraveKart REST API Server running`);
+    console.log(` Port: ${config.port}`);
+    console.log(` Mode: ${config.nodeEnv}`);
+    console.log(` Health check: http://localhost:${config.port}/api/health`);
+    console.log(`===============================================`);
 
-  const dbOk = await testDbConnection();
-  if (dbOk) {
-    console.log(' [Database] Connected to PostgreSQL via Prisma');
-  } else {
-    console.log(' [Database] Running with in-memory seeded store (PostgreSQL connection optional for local dev)');
-  }
-});
+    const dbOk = await testDbConnection();
+    if (dbOk) {
+      console.log(' [Database] Connected to PostgreSQL via Prisma');
+    } else {
+      console.log(' [Database] Running with in-memory seeded store (PostgreSQL connection optional for local dev)');
+    }
+  });
+}
 
 export default app;
